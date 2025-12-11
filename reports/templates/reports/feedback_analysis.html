@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Feedback Analysis Dashboard</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Road Conditions by State</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="stateChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Issue Types Distribution</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="issueDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Feedback Locations</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="map" style="height: 400px; width: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Detailed Feedback List</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Road Name</th>
+                                                <th>Submitted By</th>
+                                                <th>Location</th>
+                                                <th>Image</th>
+                                                <th>State</th>
+                                                <th>Condition</th>
+                                                <th>Issue Type</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for feedback in feedbacks %}
+                                            <tr>
+                                                <td>{{ feedback.road_name }}</td>
+                                                <td>{{ feedback.user.username }}</td>
+                                                <td>{{ feedback.location }}</td>
+                                                <td>
+                                                    {% if feedback.image %}
+                                                    <img src="{{ feedback.image.url }}" alt="{{ feedback.road_name }}" style="max-width:150px; height:auto;" class="img-thumbnail" />
+                                                    {% else %}
+                                                    <span class="text-muted">No image</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ feedback.state }}</td>
+                                                <td>{{ feedback.get_condition_display }}</td>
+                                                <td>{{ feedback.get_issue_type_display }}</td>
+                                                <td>{{ feedback.created_at|date }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="8"><strong>Comment by {{ feedback.user.username }}:</strong> {{ feedback.description }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}"></script>
+<script>
+    // Initialize Google Map
+    function initMap() {
+        const map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 5,
+            center: { lat: 20.5937, lng: 78.9629 } // Center of India
+        });
+
+        {% for feedback in feedbacks %}
+        new google.maps.Marker({
+            position: { lat: {{ feedback.latitude }}, lng: {{ feedback.longitude }} },
+            map: map,
+            title: '{{ feedback.road_name }}'
+        });
+        {% endfor %}
+    }
+
+    // State Chart
+    const stateCtx = document.getElementById('stateChart').getContext('2d');
+    new Chart(stateCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for stat in state_stats %}'{{ stat.state }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Number of Reports',
+                data: [{% for stat in state_stats %}{{ stat.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: 'rgba(75, 192, 192, 0.5)'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Issue Distribution Chart
+    const issueCtx = document.getElementById('issueDistributionChart').getContext('2d');
+    new Chart(issueCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for stat in issue_stats %}'{{ stat.get_issue_type_display }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for stat in issue_stats %}{{ stat.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(153, 102, 255, 0.5)',
+                    'rgba(255, 159, 64, 0.5)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+
+    initMap();
+</script>
+{% endblock %}

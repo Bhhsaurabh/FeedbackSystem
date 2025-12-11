@@ -1,0 +1,364 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Submit Road Maintenance Feedback</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <button type="button" class="btn btn-info" id="useCurrentLocation">
+                        <i class="fas fa-location-arrow"></i> Use My Current Location
+                    </button>
+                </div>
+
+                <div id="map" style="height: 400px; width: 100%; margin-bottom: 20px;"></div>
+                
+                <form method="post" enctype="multipart/form-data" id="feedbackForm">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for err in form.non_field_errors %}
+                        <div>{{ err }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_road_name" class="form-label">Road Name</label>
+                                {{ form.road_name }}
+                                {% if form.road_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.road_name.errors.as_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_location" class="form-label">Location</label>
+                                {{ form.location }}
+                                {% if form.location.errors %}
+                                <div class="text-danger small mt-1">{{ form.location.errors.as_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_state" class="form-label">State</label>
+                                {{ form.state }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_city" class="form-label">City</label>
+                                {{ form.city }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {{ form.latitude }}
+                    {{ form.longitude }}
+                    {% if form.latitude.errors %}
+                    <div class="text-danger small">{{ form.latitude.errors.as_text }}</div>
+                    {% endif %}
+                    {% if form.longitude.errors %}
+                    <div class="text-danger small">{{ form.longitude.errors.as_text }}</div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_condition" class="form-label">Road Condition</label>
+                                {{ form.condition }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_issue_type" class="form-label">Issue Type</label>
+                                {{ form.issue_type }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="text-danger small mt-1">{{ form.description.errors.as_text }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_image" class="form-label">Upload Image (optional)</label>
+                        {{ form.image }}
+                        {% if form.image.errors %}
+                        <div class="text-danger small mt-1">{{ form.image.errors.as_text }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit Feedback</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    let map;
+    let marker;
+    let geocoder;
+
+    // Function to update form fields with address details
+    function updateFormFields(results, coords) {
+        if (!results || !results[0]) {
+            console.error('No results to update form with');
+            return;
+        }
+        
+        try {
+            console.log('Updating form with:', results[0]);
+            
+            // Update coordinates
+            const latField = document.querySelector('#id_latitude');
+            const lngField = document.querySelector('#id_longitude');
+            if (latField && lngField) {
+                latField.value = coords.lat;
+                lngField.value = coords.lng;
+                console.log('Updated coordinates:', coords);
+            }
+            
+            // Update location field
+            const locationField = document.querySelector('#id_location');
+            if (locationField) {
+                locationField.value = results[0].formatted_address;
+                console.log('Updated location:', results[0].formatted_address);
+            }
+            
+            // Process address components
+            for (const component of results[0].address_components) {
+                console.log('Processing component:', component);
+                
+                if (component.types.includes('route')) {
+                    const roadField = document.querySelector('#id_road_name');
+                    if (roadField) {
+                        roadField.value = component.long_name;
+                        console.log('Updated road name:', component.long_name);
+                    }
+                }
+                if (component.types.includes('locality') || component.types.includes('sublocality')) {
+                    const cityField = document.querySelector('#id_city');
+                    if (cityField) {
+                        cityField.value = component.long_name;
+                        console.log('Updated city:', component.long_name);
+                    }
+                }
+                if (component.types.includes('administrative_area_level_1')) {
+                    const stateField = document.querySelector('#id_state');
+                    if (stateField) {
+                        stateField.value = component.long_name;
+                        console.log('Updated state:', component.long_name);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error updating form fields:', error);
+        }
+    }
+
+    // Initialize the map and related functionality
+    function initMap() {
+        console.log('Initializing map...');
+        
+        try {
+            // Create map instance
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 12,
+                center: { lat: 20.5937, lng: 78.9629 },
+                mapTypeControl: true,
+                fullscreenControl: true,
+                streetViewControl: true,
+                zoomControl: true
+            });
+
+            // Create geocoder instance
+            geocoder = new google.maps.Geocoder();
+
+            // Create marker instance
+            marker = new google.maps.Marker({
+                position: map.getCenter(),
+                map: map,
+                draggable: true
+            });
+
+            console.log('Map initialized successfully');
+
+            // Handle marker drag events
+            marker.addListener('dragend', function() {
+                const position = marker.getPosition();
+                const coords = {
+                    lat: position.lat(),
+                    lng: position.lng()
+                };
+                
+                geocoder.geocode({ location: coords }, function(results, status) {
+                    if (status === 'OK' && results[0]) {
+                        updateFormFields(results, coords);
+                    } else {
+                        console.error('Geocoding failed:', status);
+                        // Fallback to OpenStreetMap Nominatim reverse geocoding
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.lat}&lon=${coords.lng}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data && data.address) {
+                                    const formatted = data.display_name || '';
+                                    const components = [];
+                                    const addr = data.address || {};
+                                    if (addr.road) components.push({ long_name: addr.road, types: ['route'] });
+                                    const city = addr.city || addr.town || addr.village || addr.hamlet;
+                                    if (city) components.push({ long_name: city, types: ['locality'] });
+                                    if (addr.state) components.push({ long_name: addr.state, types: ['administrative_area_level_1'] });
+                                    updateFormFields([{ formatted_address: formatted, address_components: components }], coords);
+                                } else {
+                                    console.error('Nominatim returned no address', data);
+                                }
+                            })
+                            .catch(err => console.error('Nominatim reverse geocoding failed', err));
+                    }
+                });
+            });
+
+            // Set up location autocomplete
+            const locationInput = document.getElementById('id_location');
+            const autocomplete = new google.maps.places.Autocomplete(locationInput);
+            
+            autocomplete.addListener('place_changed', function() {
+                const place = autocomplete.getPlace();
+                if (place.geometry) {
+                    const coords = {
+                        lat: place.geometry.location.lat(),
+                        lng: place.geometry.location.lng()
+                    };
+                    
+                    map.setCenter(coords);
+                    map.setZoom(17);
+                    marker.setPosition(coords);
+                    
+                    updateFormFields([{
+                        formatted_address: place.formatted_address,
+                        address_components: place.address_components
+                    }], coords);
+                }
+            });
+
+            // Set up location button
+            const locationButton = document.getElementById('useCurrentLocation');
+            if (locationButton) {
+                locationButton.addEventListener('click', function() {
+                    if (!navigator.geolocation) {
+                        alert('Geolocation is not supported by your browser.');
+                        return;
+                    }
+
+                    // Show loading state
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Getting location...';
+                    this.disabled = true;
+
+                    navigator.geolocation.getCurrentPosition(
+                        // Success handler
+                        position => {
+                            const coords = {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            };
+                            
+                            // Update map
+                            map.setCenter(coords);
+                            map.setZoom(17);
+                            marker.setPosition(coords);
+
+                            // Get address details
+                            geocoder.geocode({ location: coords }, (results, status) => {
+                                if (status === 'OK' && results[0]) {
+                                    updateFormFields(results, coords);
+                                    // Reset button state below
+                                    this.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
+                                    this.disabled = false;
+                                } else {
+                                    console.error('Geocoding failed:', status);
+                                    // Try Nominatim as a fallback
+                                    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.lat}&lon=${coords.lng}`)
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            if (data && data.address) {
+                                                const formatted = data.display_name || '';
+                                                const components = [];
+                                                const addr = data.address || {};
+                                                if (addr.road) components.push({ long_name: addr.road, types: ['route'] });
+                                                const city = addr.city || addr.town || addr.village || addr.hamlet;
+                                                if (city) components.push({ long_name: city, types: ['locality'] });
+                                                if (addr.state) components.push({ long_name: addr.state, types: ['administrative_area_level_1'] });
+                                                updateFormFields([{ formatted_address: formatted, address_components: components }], coords);
+                                            } else {
+                                                console.error('Nominatim returned no address', data);
+                                                alert('Could not get address for this location.');
+                                            }
+                                        })
+                                        .catch(err => {
+                                            console.error('Nominatim reverse geocoding failed', err);
+                                            alert('Could not get address for this location.');
+                                        })
+                                        .finally(() => {
+                                            // Reset button state regardless
+                                            this.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
+                                            this.disabled = false;
+                                        });
+                                }
+                            });
+                        },
+                        // Error handler
+                        error => {
+                            console.error('Geolocation error:', error);
+                            alert('Error getting your location: ' + error.message);
+                            this.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
+                            this.disabled = false;
+                        },
+                        // Options
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 0
+                        }
+                    );
+                });
+            }
+        } catch (error) {
+            console.error('Error initializing map:', error);
+        }
+    }
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&callback=initMap"></script>
+// Client-side guard: ensure latitude/longitude are present before submitting
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('feedbackForm');
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+        const lat = document.getElementById('id_latitude')?.value;
+        const lng = document.getElementById('id_longitude')?.value;
+        if (!lat || !lng) {
+            e.preventDefault();
+            alert('Please choose a location on the map before submitting the feedback.');
+            return false;
+        }
+        return true;
+    });
+});
+</script>
+{% endblock extra_js %}

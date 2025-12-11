@@ -1,0 +1,111 @@
+/* Modern UI stylesheet: variables, font, and components */
+
+:root{
+  --primary:#0d6efd; /* bootstrap blue */
+  --primary-600:#0b5ed7;
+  --accent:#17a2b8;
+  --bg:#f6f8fb;
+  --card-bg: rgba(255,255,255,0.85);
+  --glass-border: rgba(13,110,253,0.08);
+  --muted: #6c757d;
+  --radius: 12px;
+  --saffron:#FF9933;
+  --india-green:#138808;
+}
+
+/* Base */
+body{
+  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  background: linear-gradient(180deg, var(--bg) 0%, #ffffff 100%);
+  color: #222;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+.container{ max-width:1200px; }
+
+/* NAVBAR */
+.navbar{
+  background: linear-gradient(90deg, var(--saffron) 0%, #ffffff 50%, var(--india-green) 100%);
+  box-shadow: 0 6px 20px rgba(17,24,39,0.10);
+}
+.navbar-brand{ font-weight:700; color:#1f2937 !important; text-shadow:0 1px 2px rgba(255,255,255,0.6); }
+.navbar .nav-link{ color:#1f2937 !important; font-weight:500; margin-right:6px; }
+.navbar .nav-link:hover{ background:rgba(0,0,0,0.06); border-radius:8px; }
+.nav-link.btn-link{ background:#1f2937; color:#fff !important; border-radius:24px; padding:6px 16px; font-weight:600; box-shadow:0 4px 14px rgba(0,0,0,0.25); }
+.nav-link.btn-link:hover{ transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,0.3); }
+
+/* HERO */
+.site-hero{ background: linear-gradient(180deg, rgba(13,110,253,0.08), rgba(23,162,184,0.03)); }
+.site-hero h1{ font-weight:600; }
+
+/* Tri-color ribbon */
+.tri-color-ribbon{height:6px;width:100%;background:linear-gradient(90deg,var(--saffron) 0%,#ffffff 50%,var(--india-green) 100%);border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.08);}
+
+/* Chakra icon (simplified wheel) */
+.chakra-icon{display:inline-block;width:28px;height:28px;border:2px solid #0b5ed7;border-radius:50%;position:relative;background:radial-gradient(circle at center,#0b5ed7 2px,transparent 3px);} 
+.chakra-icon:before,.chakra-icon:after{content:"";position:absolute;top:50%;left:50%;width:2px;height:80%;background:#0b5ed7;transform:translate(-50%,-50%);} 
+.chakra-icon:after{transform:translate(-50%,-50%) rotate(90deg);} 
+
+/* Auth wrapper */
+.auth-wrapper{min-height:60vh;}
+.auth-wrapper .card{backdrop-filter:blur(6px);}
+
+/* CARDS (glass) */
+.card{
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 30px rgba(17,24,39,0.04);
+  overflow:hidden;
+}
+.card-header{ background:linear-gradient(90deg,var(--saffron),#ffffff 50%,var(--india-green)); border-bottom:none; padding:16px 20px; color:#1f2937; font-weight:600; }
+.card-body{ padding:18px; }
+
+/* Buttons */
+.btn-primary{
+  background: linear-gradient(90deg,var(--primary),var(--primary-600));
+  border:none; padding:10px 18px; border-radius:10px; font-weight:600;
+  box-shadow: 0 8px 20px rgba(13,110,253,0.12);
+}
+.btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 12px 30px rgba(13,110,253,0.16); }
+
+.btn-outline-secondary{ border-radius:10px; }
+
+/* Forms */
+.form-control{ border-radius:10px; border:1px solid rgba(17,24,39,0.06); padding:10px 12px; }
+.form-control:focus{ box-shadow: 0 6px 18px rgba(13,110,253,0.08); border-color:var(--primary-600); }
+.form-label{ font-weight:600; color:#222; }
+
+/* Map */
+#map{ height:420px; border-radius:12px; border:1px solid rgba(17,24,39,0.04); }
+
+/* Tables */
+.table thead th{ background: linear-gradient(90deg, rgba(13,110,253,0.04), rgba(23,162,184,0.02)); border-bottom: none; font-weight:600; }
+.table tbody tr:hover{ background: rgba(13,110,253,0.03); }
+.table td, .table th{ vertical-align:middle; padding:14px; }
+
+/* Alerts */
+.alert{ border-radius:10px; box-shadow:0 6px 20px rgba(17,24,39,0.03); }
+
+/* Location button */
+#useCurrentLocation{ background: linear-gradient(90deg,var(--accent),#0ea5a8); color:#fff; border:none; padding:8px 14px; border-radius:8px; }
+
+/* Thumbnails */
+.img-thumbnail{ border-radius:8px; border:1px solid rgba(17,24,39,0.04); }
+
+/* Footer */
+.footer{ background: linear-gradient(180deg, #ffffff, rgba(13,110,253,0.02)); padding:24px 0; margin-top:auto; border-top:1px solid rgba(17,24,39,0.02); }
+.footer .chakra-icon{width:20px;height:20px;border-color:var(--primary);}
+
+/* Responsive */
+@media (max-width:768px){
+  #map{ height:300px; }
+  .site-hero{ padding:18px 0; }
+  .container{ padding-left:12px; padding-right:12px; }
+}
+
+/* Small helpers */
+.muted-small{ color:var(--muted); font-size:0.9rem; }
+

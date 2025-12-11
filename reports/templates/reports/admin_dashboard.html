@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <h4 class="mb-0">Admin Dashboard</h4>
+      <span class="badge bg-warning text-dark">Staff Only</span>
+    </div>
+    <p class="text-muted mt-2">Manage user feedback and comments. Deleting is permanent.</p>
+  </div>
+</div>
+<div class="row">
+    <div class="col-lg-7 mb-4">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Feedback Entries</strong>
+        <span class="badge bg-light text-dark">{{ feedbacks|length }} total</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <form method="post" id="bulk-delete-form" action="{% url 'reports:bulk_delete_feedback' %}">
+            {% csrf_token %}
+            <div class="d-flex align-items-center p-3 gap-2">
+              <div>
+                <button type="submit" class="btn btn-sm btn-danger" id="bulk-delete-btn">Delete selected</button>
+              </div>
+              <div class="text-muted">Select rows using the checkboxes on the left. Deletion is permanent.</div>
+            </div>
+            <table class="table mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th style="width:36px;"><input type="checkbox" id="select-all-feedback"></th>
+                  <th>ID</th>
+                  <th>Road</th>
+                  <th>User</th>
+                  <th>Issue</th>
+                  <th>Created</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for f in feedbacks %}
+                <tr>
+                  <td><input type="checkbox" name="selected_feedback" value="{{ f.id }}" class="select-feedback"></td>
+                  <td>{{ f.id }}</td>
+                  <td><a href="{% url 'reports:feedback_detail' f.id %}">{{ f.road_name }}</a></td>
+                  <td>{{ f.user.username }}</td>
+                  <td>{{ f.get_issue_type_display }}</td>
+                  <td>{{ f.created_at|date:'M d, Y' }}</td>
+                  <td>
+                    <form method="post" action="{% url 'reports:delete_feedback' f.id %}" onsubmit="return confirm('Delete feedback #{{ f.id }}?');">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-outline-danger"><i class="fa fa-trash"></i></button>
+                    </form>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-muted text-center py-4">No feedback yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5 mb-4">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Recent Comments</strong>
+        <span class="badge bg-light text-dark">{{ comments|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Feedback</th>
+                <th>Text</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in comments %}
+              <tr>
+                <td>{{ c.id }}</td>
+                <td>{{ c.user.username }}</td>
+                <td><a href="{% url 'reports:feedback_detail' c.feedback.id %}">#{{ c.feedback.id }}</a></td>
+                <td style="max-width:220px;">
+                  <small>{{ c.text|truncatechars:80 }}</small>
+                </td>
+                <td>
+                  <form method="post" action="{% url 'reports:delete_comment' c.id %}" onsubmit="return confirm('Delete comment #{{ c.id }}?');">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger"><i class="fa fa-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted text-center py-4">No comments yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  <script>
+    // select-all checkbox behavior for feedback list
+    document.addEventListener('DOMContentLoaded', function(){
+      const selectAll = document.getElementById('select-all-feedback');
+      if(!selectAll) return;
+      selectAll.addEventListener('change', function(){
+        const checks = document.querySelectorAll('.select-feedback');
+        checks.forEach(c => c.checked = selectAll.checked);
+      });
+
+      const bulkForm = document.getElementById('bulk-delete-form');
+      const bulkBtn = document.getElementById('bulk-delete-btn');
+      if(bulkForm && bulkBtn){
+        bulkForm.addEventListener('submit', function(e){
+          const checked = document.querySelectorAll('.select-feedback:checked').length;
+          if(!checked){
+            e.preventDefault();
+            alert('Please select at least one feedback to delete.');
+            return false;
+          }
+          if(!confirm(`Delete ${checked} selected feedback item(s)? This cannot be undone.`)){
+            e.preventDefault();
+            return false;
+          }
+        });
+      }
+    });
+  </script>
+{% endblock %}
