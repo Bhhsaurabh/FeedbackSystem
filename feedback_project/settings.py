@@ -151,16 +151,12 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Authentication settings
 LOGIN_URL = 'reports:login'
 LOGIN_REDIRECT_URL = 'reports:dashboard'
-LOGOUT_REDIRECT_URL = 'reports:login'
+LOGOUT_REDIRECT_URL = 'reports:dashboard'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-LOGIN_URL = 'reports:login'
-LOGIN_REDIRECT_URL = 'reports:dashboard'
-LOGOUT_REDIRECT_URL = 'reports:dashboard'
 
 # Security settings for production
 if not DEBUG:
@@ -170,3 +166,5 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 3600
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    # Allow CSRF for Render domain
+    CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if os.environ.get('CSRF_TRUSTED_ORIGINS') else []
