@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12 mb-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">My Posts</h5>
+        <a href="{% url 'reports:submit_feedback' %}" class="btn btn-primary btn-sm">New Post</a>
+      </div>
+      <div class="card-body">
+        {% if my_feedbacks %}
+          <div class="row g-4">
+            {% for fb in my_feedbacks %}
+            <div class="col-lg-4 col-md-6">
+              <div class="card h-100 shadow-sm">
+                {% if fb.image %}
+                <img src="{{ fb.image.url }}" alt="{{ fb.road_name }}" class="card-img-top" style="height:160px;object-fit:cover;">
+                {% else %}
+                <div class="card-img-top d-flex align-items-center justify-content-center bg-light text-muted" style="height:160px;">No Image</div>
+                {% endif %}
+                <div class="card-body">
+                  <h6 class="mb-1"><a href="{% url 'reports:feedback_detail' fb.id %}">{{ fb.road_name }}</a></h6>
+                  <small class="text-muted">{{ fb.created_at|date:'M d, Y H:i' }}</small>
+                  <p class="mt-2 small">{{ fb.description|truncatechars:140 }}</p>
+                  <div class="d-flex gap-2">
+                    <a href="{% url 'reports:edit_feedback' fb.id %}" class="btn btn-outline-primary btn-sm">Edit</a>
+                    <form method="post" action="{% url 'reports:delete_own_feedback' fb.id %}" onsubmit="return confirm('Delete this post?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted">You have not posted any feedback yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

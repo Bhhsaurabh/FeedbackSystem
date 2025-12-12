@@ -207,3 +207,45 @@ def add_comment(request, pk):
             messages.error(request, 'Unable to add comment.')
     next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('reports:feedback_detail', args=[pk])
     return redirect(next_url)
+
+# ------- My Posts (owner edit/delete) -------
+@login_required
+def my_posts(request):
+    qs = (RoadFeedback.objects
+          .filter(user=request.user)
+          .select_related('user')
+          .prefetch_related('comments__user')
+          .order_by('-created_at'))
+    return render(request, 'reports/my_posts.html', {
+        'my_feedbacks': qs,
+    })
+
+@login_required
+def edit_feedback(request, pk):
+    fb = get_object_or_404(RoadFeedback, pk=pk, user=request.user)
+    if request.method == 'POST':
+        form = RoadFeedbackForm(request.POST, request.FILES, instance=fb)
+        if form.is_valid():
+            lat = form.cleaned_data.get('latitude')
+            lng = form.cleaned_data.get('longitude')
+            if lat is None or lng is None:
+                messages.error(request, 'Please set a location on the map.')
+            else:
+                form.save()
+                messages.success(request, 'Your post has been updated.')
+                return redirect('reports:my_posts')
+    else:
+        form = RoadFeedbackForm(instance=fb)
+    return render(request, 'reports/edit_feedback.html', {
+        'form': form,
+        'feedback': fb,
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+    })
+
+@login_required
+def delete_own_feedback(request, pk):
+    fb = get_object_or_404(RoadFeedback, pk=pk, user=request.user)
+    if request.method == 'POST':
+        fb.delete()
+        messages.success(request, 'Your post has been deleted.')
+    return redirect('reports:my_posts')
